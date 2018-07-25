@@ -1,5 +1,7 @@
-var curEl = null;
-var prevEl = null;
+var defaultIndex = {i: -1, j: -1};
+var currIndex = defaultIndex;
+var prevIndex = defaultIndex; 
+var collisions = [];
 
 var startingConfigs = [
     [
@@ -258,9 +260,9 @@ init();
 animate();
 
 function loadingStartingConfiguration(sc) {
-    var batch = [];
-    for(var i = 0; i < nSqrd; i++) {
-        for(var j=0; j < nSqrd; j++) {
+    let batch = [];
+    for(let i = 0; i < nSqrd; i++) {
+        for(let j=0; j < nSqrd; j++) {
             if(sc[i][j] !== 0) {
                 batch.push({i:i, j:j, value:sc[i][j], isStarting: true});
             }
@@ -283,10 +285,143 @@ function batchEnterValue(batch) {
     );
 }
 
-function checkCollision() {
-    // todo
+function checkCollision(i, j, value) {
+    console.log('in checkCollisions function', i, j, value);
+    let valid = true; 
+    // temporary hack, todo
+    if(value === '') {
+        return valid;
+    }
+    
+    // collisions = [];
+
+    // check column 
+    for(let c = 0; c < nSqrd; c++) {
+        if(cells[i][c].value === value) {
+            console.log('row collision')
+            let clashedEl = document.getElementById(indexToId(i, c));
+            collisions.push(clashedEl);
+        }
+    }
+    // check column 
+    for(let r = 0; r < nSqrd; r++) {
+        if(cells[r][j].value === value) {
+            console.log('column collision')
+            let clashedEl = document.getElementById(indexToId(r, j));
+            collisions.push(clashedEl);
+        }
+    }
+    // check square 
+    let index = checkSquare(i, j, value);
+    if(index) {
+        console.log('square collision')
+        let clashedEl = document.getElementById(indexToId(index.i, index.j));
+        collisions.push(clashedEl); 
+    }
+    
+    if(collisions.length !== 0) {
+        valid = false;
+        collisions.map(
+            obj => obj.children[0].className += ' collision'
+        )
+    }
+    console.log(collisions);
+    return valid;
 }
 
+function checkSquare(i, j, value) {
+    // isomorphic position 
+    let a = i % n;
+    let b = j % n;
+    console.log('hereeeeeeeee, a, b, ', a, b);
+    let centerI;
+    let centerJ;
+    // center is (1, 1)
+    if(a === 0 && b === 0) {
+        console.log('a, b', a, b)
+        centerI = i + 1;
+        centerJ = j + 1;
+    }
+    else if(a === 0 && b === 1) {
+        console.log('a, b', a, b)
+        centerI = i + 1;
+        centerJ = j;
+    }
+    else if(a === 0 && b === 2) {
+        console.log('a, b', a, b)
+        centerI = i + 1;
+        centerJ = j - 1;
+    }
+    else if(a === 1 && b === 0) {
+        console.log('a, b', a, b)
+        centerI = i;
+        centerJ = j + 1;
+    }
+    else if(a === 1 && b === 1) {
+        console.log('a, b', a, b)
+        centerI = i;
+        centerJ = j;
+    }
+    else if(a === 1 && b === 2) {
+        console.log('a, b', a, b)
+        centerI = i;
+        centerJ = j - 1;
+    }
+    else if(a === 2 && b === 0) {
+        console.log('a, b', a, b)
+        centerI = i - 1;
+        centerJ = j + 1;
+    }
+    else if(a === 2 && b === 1) {
+        console.log('a, b', a, b)
+        centerI = i - 1;
+        centerJ = j;
+    }
+    else if(a === 2 && b === 2) {
+        console.log('a, b', a, b)
+        centerI = i - 1;
+        centerJ = j - 1;
+    }
+    console.log('center is ', centerI, centerJ);
+    
+    // 1
+    if(cells[centerI][centerJ].value === value) {
+        return {i, j};
+    }
+    // 2
+    else if(cells[centerI-1][centerJ-1].value === value) {
+        return {i, j};
+    }
+    // 3
+    else if(cells[centerI-1][centerJ].value === value) {
+        return {i, j};
+    }
+    // 4
+    else if(cells[centerI-1][centerJ+1].value === value) {
+        return {i, j};
+    }
+    // 5
+    else if(cells[centerI][centerJ+1].value === value) {
+        return {i, j};
+    }
+    // 6
+    else if(cells[centerI][centerJ-1].value === value) {
+        return {i, j};
+    }
+    // 7
+    else if(cells[centerI+1][centerJ-1].value === value) {
+        return {i, j};
+    }
+    // 8
+    else if(cells[centerI+1][centerJ+1].value === value) {
+        return {i, j};
+    }
+    // 9
+    else if(cells[centerI+1][centerJ].value === value) {
+        return {i, j};
+    }
+    return; 
+} 
 
 // naive way; work on this later 
 function enterValue(i ,j, value) {
@@ -322,11 +457,11 @@ function canClearValue(i, j) {
 
 function getInputFromKeyboard(event) {
     // var e = event || window.event || arguments.callee.caller.arguments[0];
-    var kc = event.keyCode;
+    let kc = event.keyCode;
     // console.log(kc);
     if (kc === 8 || kc === 46 || kc === 96 || kc === 48) {
         /*delete or backspace or 0 on numberpad or number row*/
-        return 0;
+        return '';
         /*Empty*/
     } else if (kc >= 49 && kc <= 57) {
         return kc - 48;
@@ -335,10 +470,10 @@ function getInputFromKeyboard(event) {
         return kc - 96;
         /*1-9 numberpad*/
     } else if (kc >= 65 && kc <= 90) {
-        return kc - 55;
+        return '';
         /*A-Z*/
     } else if (kc === 222) {
-        return 36;
+        return '';
         /*#*/
     }
 }
@@ -347,7 +482,7 @@ function isCompelete() {
 }
 
 function indexToId(i, j) {
-    return i * 9 + j + 1;
+    return i * 9 + j;
 }
 
 function idToIndex(id) {
@@ -356,13 +491,15 @@ function idToIndex(id) {
     return {i, j}; 
 }
 
+/***********************************************************************************/
+
 function init() {
     // data 
     n = 3;
     nSqrd = n * n;
 
     // Initialize all the cells, all 0s 
-    cells = new Utils.MultiArray(this.nSqrd, this.nSqrd);
+    cells = new Utils.MultiArray(nSqrd, nSqrd);
     for(let i = 0; i < nSqrd; i++) {
         for(let j = 0; j < nSqrd; j++ ) {
             this.cells[i][j] = {
@@ -393,8 +530,6 @@ function init() {
             var cell = document.createElement('div');
             cell.className = 'cell';
             cell.id = id++;
-            console.log(i, j, id);
-            // cell.style.backgroundColor = 'rgba(0, 127, 127, 0.25)';
             
             var number = document.createElement('div');
             number.className = 'number';
@@ -407,8 +542,7 @@ function init() {
             }
             cell.appendChild(number);
 
-            // cell.addEventListener('keydown', handleKeydown, false);
-            // cell.addEventListener('click', handleClick, false);
+          
             addClickHandler(cell, i, j); 
             addKeydownHandler(cell, i, j);
 
@@ -451,12 +585,17 @@ function init() {
 
     // handle keydown 
     document.onkeydown = function(event) {
-       
-        if(curEl) {
-            var num = getInputFromKeyboard(event);
-            curEl.children[0].textContent = num;
-            //curEl = null;
-        }
+       if(currIndex !== defaultIndex) {
+           var currElement = document.getElementById(indexToId(currIndex.i, currIndex.j));
+           var input = getInputFromKeyboard(event);
+           currElement.children[0].textContent =  input;
+
+           if(checkCollision(currIndex.i, currIndex.j, input)) {
+               enterValue(currIndex.i, currIndex.j, input);
+           } else {
+               
+           }
+       }
     }
 
     render();
@@ -494,19 +633,40 @@ function onWindowResize() {
 //     console.log('click');
 // }
 
-function addClickHandler(el, i, j) {
+function addClickHandler(el, i , j) {
     el.addEventListener('click', function(e) {
-        // el.children[0].textContent = '';
-        // console.log('click', i, j, el);
-        // document.onkeydown = getInputFromKeyboard(e);
-      //  addKeydownHandler(el, i, j);
-        if(curEl === el) {
-            // curEl = ; 
-            // el.className -= ' highlight';  
-            // console.log(el);
-        } else {
-            curEl = el;
-            el.className += ' highlight';
+        // check if is starting config cell 
+        if(cells[i][j].isStarting) {
+            return;
+        }
+
+        // console.log('any way, ', {i,j});
+        let element = el;
+        // same 
+        if(currIndex.i === i && currIndex.j === j) {
+            console.log('same');
+            console.log('remove same highlight');
+            element.classList.remove('highlight');
+            currIndex = defaultIndex;
+            prevIndex = defaultIndex;
+            
+        }
+        // not same click 
+        else {
+            currIndex = {i, j};
+            console.log(currIndex);
+            element.className += ' highlight';
+            if(prevIndex !== defaultIndex) {
+                var prevId = indexToId(prevIndex.i, prevIndex.j);
+                // console.log('prev id is ', prevId);
+                // console.log('remove different highlight');
+                var prevElement = document.getElementById(prevId);
+                // console.log(prevElement);
+                prevElement.classList.remove('highlight');
+            }
+            prevIndex = currIndex;
+            // console.log('prev index is, ', prevIndex);
+            // console.log('not same');
         }
     }, false);
 }
