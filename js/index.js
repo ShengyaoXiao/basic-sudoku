@@ -257,7 +257,7 @@ var objects = [];
 var targets = {board: [], boardUp:[]}; 
 
 var startNewBtn = document.getElementById('start');
-// startNewBtn.addEventListener('click', init);
+startNewBtn.addEventListener('click', startNewBoard);
 var resetBtn = document.getElementById('reset');
 // resetBtn.addEventListener('click', reset);
 
@@ -288,10 +288,12 @@ function initModel() {
 function loadingStartingConfiguration(sc) {
     let batch = [];
     for(let i = 0; i < nSqrd; i++) {
-        for(let j=0; j < nSqrd; j++) {
+        for(let j = 0; j < nSqrd; j++) {
+            let isStarting = false;
             if(sc[i][j] !== 0) {
-                batch.push({i:i, j:j, value:sc[i][j], isStarting: true});
+                isStarting = true;
             }
+            batch.push({i:i, j:j, value:sc[i][j], isStarting: isStarting});
         }
     }
     batchEnterValue(batch);
@@ -302,7 +304,9 @@ function batchEnterValue(batch) {
         function(element, index, array) {
             cells[element.i][element.j].value = element.value;
             cells[element.i][element.j].isStarting = element.isStarting;
-            emptyCellsCount--; 
+            if(element.isStarting) {
+                emptyCellsCount--; 
+            }
         }
     );
 }
@@ -320,6 +324,8 @@ function checkCollision(i, j, value) {
     
     for(let c = 0; c < nSqrd; c++) {
         if(cells[i][c].value === value) {
+            console.log('in cells, cells[i][c])', cells[i][j]);
+            console.log('Eh, but my value is ', value);
             let clashedEl = document.getElementById(indexToId(i, c));
             console.log('111111111111111111111 ', clashedEl); 
             collisions.push(clashedEl);
@@ -403,7 +409,7 @@ function checkSquare(i, j, value) {
         centerI = i - 1;
         centerJ = j - 1;
     }
-    // console.log('center is ', centerI, centerJ);
+    console.log('center is ', centerI, centerJ);
     
     // 1
     if(cells[centerI][centerJ].value === value) {
@@ -472,37 +478,33 @@ function checkSquare(i, j, value) {
 } 
 
 function enterValue(i ,j, value) {
-    if(canEnterValue(i, j)) {
-        cells[i][j].value = value;
-        // console.log('value entered, this value is ', cells[i][j]);
-        emptyCellsCount--;
-        if(isCompelete()) {
-            console.log('game is over');
-        }
+    cells[i][j].value = value;
+    // console.log('value entered, this value is ', cells[i][j]);
+    emptyCellsCount--;
+    if(isCompelete()) {
+        console.log('game is over');
     }
 }
 
 function clearValue(i, j) {
-    if(canClearValue(i, j)) {
-        cells[i][j] = 0;
-        emptyCellsCount++;
-    }
+    cells[i][j] = 0;
+    emptyCellsCount++;
 }
 
-function canEnterValue(i, j) {
-    if(cells[i][j].value === 0) {
-        return true;
-    }
-    return false;
-}
+// function canEnterValue(i, j) {
+//     if(cells[i][j].value === 0) {
+//         return true;
+//     }
+//     return false;
+// }
 
 
-function canClearValue(i, j) {
-    if(cells[i][j].value !== 0 && !cells[i][j].isStarting) {
-        return true;
-    }
-    return false; 
-}
+// function canClearValue(i, j) {
+//     if(cells[i][j].value !== 0 && !cells[i][j].isStarting) {
+//         return true;
+//     }
+//     return false; 
+// }
 
 function getInputFromKeyboard(event) {
     // var e = event || window.event || arguments.callee.caller.arguments[0];
@@ -535,6 +537,7 @@ function isCompelete() {
 function indexToId(i, j) {
     return i * 9 + j;
 }
+
 
 /***********************************************************************************/
 /***********************************************************************************/
@@ -598,15 +601,13 @@ function initView() {
             prevPosition.y = object.position.y;
                 
             targets.board.push(object);
-         //   objects1.push(object); 
 
             let objectUp = new THREE.Object3D();
-            objectUp.position.x = object.position.x + 100;
-            objectUp.position.y = object.position.y - 100;
-            objectUp.position.z = object.position.z + 100;
+            objectUp.position.x = object.position.x;
+            objectUp.position.y = object.position.y;
+            objectUp.position.z = object.position.z + 150;
             
             targets.boardUp.push(objectUp);
-           // objects2.push(objectUp); 
 
         }
         if((i + 1) % n === 0) {
@@ -617,8 +618,6 @@ function initView() {
         prevPosition.y = startingPosition.y;
     }
 
-    console.log('board is ', targets.board);
-    console.log('boardUp is', targets.boardUp);
     // renderer 
     renderer = new THREE.CSS3DRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -657,6 +656,7 @@ function initView() {
                 if(checkCollision(currIndex.i, currIndex.j, input)) {
                     enterValue(currIndex.i, currIndex.j, input);
                 //    transform(targets.boardUp, 2000);
+                    transformUpDown(currIndex.i, currIndex.j);
                 }
                 // collisions happen, display the collisions and remove alert two secons later  
                 else {
@@ -667,8 +667,6 @@ function initView() {
             }
        }
     }
-
-    // render();
     
 }
 
@@ -684,9 +682,6 @@ function removeClashAlert(x, y) {
 function transform(targets, duration) {
     console.log('transform');
     TWEEN.removeAll();
-    
-    // console.log('targets ',targets);
-    // console.log('current ', current);
 
     for(let i = 0; i < objects.length; i++) {
         let object = objects[i];
@@ -698,6 +693,45 @@ function transform(targets, duration) {
             .start();
         
         new TWEEN.Tween().to({}, duration*2).onUpdate(render).start(); 
+    }
+}
+
+function transformUpDown(i, j) {
+    TWEEN.removeAll();
+    let id = indexToId(i, j);
+    let object = objects[id];
+    let targetUp = targets.boardUp[id];
+
+    let up = new TWEEN.Tween(object.position)
+                .to({z: targetUp.position.z }, 500)
+                .easing(TWEEN.Easing.Exponential.InOut)
+
+    let targetDown = targets.board[id]
+    let down = new TWEEN.Tween(object.position)
+                .to({z: targetDown.position.z}, 500)
+                .easing(TWEEN.Easing.Exponential.InOut)
+
+    up.chain(down).start();
+    new TWEEN.Tween().to({}, 2000).onUpdate(render).start(); 
+}
+
+function startNewBoard() {
+    TWEEN.removeAll();
+    for(let i = 0; i < objects.length; i++) {
+        let object = objects[i];
+        let target = targets.board[i];
+
+    let center = new TWEEN.Tween(object.position)
+            .to({x: 0, y: 0, z: 0}, Math.random() * 1000 + 1000)
+            .easing(TWEEN.Easing.Exponential.InOut)
+            .onComplete(loadNewData);
+    
+    let back = new TWEEN.Tween(object.position)
+            .to({x: target.position.x, y: target.position.y, z: target.position.z}, Math.random() * 1000 + 1000)
+            .easing(TWEEN.Easing.Exponential.InOut)
+    
+    center.chain(back).start();
+    new TWEEN.Tween().to({}, 2000*2).onUpdate(render).start(); 
     }
 }
 
@@ -750,4 +784,32 @@ function animate() {
 
 function render() {
     renderer.render(scene, camera); 
+}
+
+
+function loadNewData() {
+    // load new data 
+    collisions = [];
+    emptyCellsCount = nSqrd * nSqrd;
+    var rand = Math.floor(Math.random()*startingConfigs.length);
+    startConfig = startingConfigs[rand];
+    loadingStartingConfiguration(startConfig);
+    
+    // load new view 
+    currIndex = defaultIndex;
+    prevIndex = defaultIndex; 
+
+    for(let i = 0; i < nSqrd; i++) {
+        for(let j = 0; j < nSqrd; j++) {
+            let element = document.getElementById(indexToId(i,j));
+            element.className = 'cell';
+            element.children[0].className = 'number';
+            if(cells[i][j].value === 0) {
+                element.children[0].textContent = '';
+            } else {
+                element.children[0].className += ' isStarting';
+                element.children[0].textContent = cells[i][j].value;
+            }
+        }
+    }
 }
