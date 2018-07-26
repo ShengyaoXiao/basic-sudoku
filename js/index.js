@@ -260,8 +260,29 @@ var startNewBtn = document.getElementById('start');
 var resetBtn = document.getElementById('reset');
 // resetBtn.addEventListener('click', reset);
 
-init();
+initModel(); 
+initView();
 animate();
+
+function initModel() {
+    n = 3;
+    nSqrd = n * n;
+
+    cells = new Utils.MultiArray(nSqrd, nSqrd);
+    for(let i = 0; i < nSqrd; i++) {
+        for(let j = 0; j < nSqrd; j++ ) {
+                cells[i][j] = {
+                    value: 0,
+                    isStarting: false
+                };
+        }
+    }
+
+    emptyCellsCount = nSqrd * nSqrd;
+    var rand = Math.floor(Math.random()*startingConfigs.length);
+    startConfig = startingConfigs[rand];
+    loadingStartingConfiguration(startConfig);
+}
 
 function loadingStartingConfiguration(sc) {
     let batch = [];
@@ -275,19 +296,19 @@ function loadingStartingConfiguration(sc) {
     batchEnterValue(batch);
 }
 
-// function setToStartingConfiguration() {
-    
-// }
-
 function batchEnterValue(batch) {
     batch.forEach(
         function(element, index, array) {
             cells[element.i][element.j].value = element.value;
             cells[element.i][element.j].isStarting = element.isStarting;
             emptyCellsCount--; 
-        }, this 
+        }
     );
 }
+
+// function setToStartingConfiguration() {
+    
+// }
 
 function checkCollision(i, j, value) {
     let valid = true; 
@@ -299,7 +320,7 @@ function checkCollision(i, j, value) {
     for(let c = 0; c < nSqrd; c++) {
         if(cells[i][c].value === value) {
             let clashedEl = document.getElementById(indexToId(i, c));
-            // console.log('111111111111111111111 ', clashedEl); 
+            console.log('111111111111111111111 ', clashedEl); 
             collisions.push(clashedEl);
         }
     }
@@ -307,14 +328,14 @@ function checkCollision(i, j, value) {
     for(let r = 0; r < nSqrd; r++) {
         if(cells[r][j].value === value) {
             let clashedEl = document.getElementById(indexToId(r, j));
-            // console.log('222222222222222222222 ', clashedEl); 
+            console.log('222222222222222222222 ', clashedEl); 
             collisions.push(clashedEl);
         }
     }
     // check square 
     let clashedIndex = checkSquare(i, j, value);
     if(clashedIndex !== null) {
-        // console.log('wtfffffffffffffffffffffffffffffffffff', clashedIndex);
+        console.log('333333333333333333333333333', clashedIndex);
        let clashedEl = document.getElementById(indexToId(clashedIndex.ci, clashedIndex.cj));
        collisions.push(clashedEl); 
         
@@ -323,10 +344,10 @@ function checkCollision(i, j, value) {
     if(collisions.length !== 0) {
         // add current element into the collisions array 
         let currElement = document.getElementById(indexToId(i, j));
-        // console.log('44444444444444444444444 ', currElement); 
+        console.log('44444444444444444444444 ', currElement); 
         collisions.push(currElement);
 
-        // console.log(collisions);
+        console.log(collisions);
         valid = false;
         collisions.map(
             obj => obj.children[0].className += ' collision'
@@ -508,6 +529,7 @@ function getInputFromKeyboard(event) {
         /*#*/
     }
 }
+
 function isCompelete() {
     console.log('emptyCellsCount is', emptyCellsCount);
     return emptyCellsCount === 0;
@@ -522,7 +544,7 @@ function indexToId(i, j) {
 /***********************************************************************************/
 /***********************************************************************************/
 
-function init() {
+function initView() {
     // defaultIndex = {i: -1, j: -1};
     // currIndex = defaultIndex;
     // prevIndex = defaultIndex; 
@@ -532,28 +554,28 @@ function init() {
     // targets = {board: [], grid:[]}; 
     
     // data 
-    n = 3;
-    nSqrd = n * n;
+    // n = 3;
+    // nSqrd = n * n;
 
-    // Initialize all the cells, all 0s 
-    cells = new Utils.MultiArray(nSqrd, nSqrd);
-    for(let i = 0; i < nSqrd; i++) {
-        for(let j = 0; j < nSqrd; j++ ) {
-                cells[i][j] = {
-                value: 0,
-                isStarting: false
-            };
-        }
-    }
+    // // Initialize all the cells, all 0s 
+    // cells = new Utils.MultiArray(nSqrd, nSqrd);
+    // for(let i = 0; i < nSqrd; i++) {
+    //     for(let j = 0; j < nSqrd; j++ ) {
+    //             cells[i][j] = {
+    //             value: 0,
+    //             isStarting: false
+    //         };
+    //     }
+    // }
 
-    emptyCellsCount = nSqrd * nSqrd;
-    console.log(emptyCellsCount);
+    // emptyCellsCount = nSqrd * nSqrd;
+    // console.log(emptyCellsCount);
 
-    // Get a new configuration 
-    var rand = Math.floor(Math.random()*startingConfigs.length);
-    startConfig = startingConfigs[rand];
-    // Load the configuration and set the value to cells
-    loadingStartingConfiguration(startConfig);
+    // // Get a new configuration 
+    // var rand = Math.floor(Math.random()*startingConfigs.length);
+    // startConfig = startingConfigs[rand];
+    // // Load the configuration and set the value to cells
+    // loadingStartingConfiguration(startConfig);
     
     // 3D view 
     camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 1, 1000);
