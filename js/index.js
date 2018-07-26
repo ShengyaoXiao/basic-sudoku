@@ -1,8 +1,3 @@
-var defaultIndex = {i: -1, j: -1};
-var currIndex = defaultIndex;
-var prevIndex = defaultIndex; 
-var collisions = [];
-
 var startingConfigs = [
     [
         [0,9,6, 0,0,0, 8,0,0],
@@ -245,8 +240,12 @@ var startingConfigs = [
     ]
 ];
 
+// model 
+var defaultIndex = {i: -1, j: -1};
+var currIndex = defaultIndex;
+var prevIndex = defaultIndex; 
+var collisions = [];
 
-// data 
 var cells, startingConfig, n, nSqrd, emptyCellsCount; 
 
 // view 
@@ -255,6 +254,11 @@ var controls;
 
 var objects = [];
 var targets = {board: [], grid:[]}; 
+
+var startNewBtn = document.getElementById('start');
+// startNewBtn.addEventListener('click', init);
+var resetBtn = document.getElementById('reset');
+// resetBtn.addEventListener('click', reset);
 
 init();
 animate();
@@ -286,46 +290,48 @@ function batchEnterValue(batch) {
 }
 
 function checkCollision(i, j, value) {
-    console.log('in checkCollisions function', i, j, value);
     let valid = true; 
     // temporary hack, todo
     if(value === '') {
         return valid;
     }
     
-    // collisions = [];
-
-    // check column 
     for(let c = 0; c < nSqrd; c++) {
         if(cells[i][c].value === value) {
-            console.log('row collision')
             let clashedEl = document.getElementById(indexToId(i, c));
+            // console.log('111111111111111111111 ', clashedEl); 
             collisions.push(clashedEl);
         }
     }
     // check column 
     for(let r = 0; r < nSqrd; r++) {
         if(cells[r][j].value === value) {
-            console.log('column collision')
             let clashedEl = document.getElementById(indexToId(r, j));
+            // console.log('222222222222222222222 ', clashedEl); 
             collisions.push(clashedEl);
         }
     }
     // check square 
-    let index = checkSquare(i, j, value);
-    if(index) {
-        console.log('square collision')
-        let clashedEl = document.getElementById(indexToId(index.i, index.j));
-        collisions.push(clashedEl); 
+    let clashedIndex = checkSquare(i, j, value);
+    if(clashedIndex !== null) {
+        // console.log('wtfffffffffffffffffffffffffffffffffff', clashedIndex);
+       let clashedEl = document.getElementById(indexToId(clashedIndex.ci, clashedIndex.cj));
+       collisions.push(clashedEl); 
+        
     }
     
     if(collisions.length !== 0) {
+        // add current element into the collisions array 
+        let currElement = document.getElementById(indexToId(i, j));
+        // console.log('44444444444444444444444 ', currElement); 
+        collisions.push(currElement);
+
+        // console.log(collisions);
         valid = false;
         collisions.map(
             obj => obj.children[0].className += ' collision'
         )
     }
-    console.log(collisions);
     return valid;
 }
 
@@ -333,101 +339,126 @@ function checkSquare(i, j, value) {
     // isomorphic position 
     let a = i % n;
     let b = j % n;
-    console.log('hereeeeeeeee, a, b, ', a, b);
+    // console.log('hereeeeeeeee, a, b, ', a, b);
+   
+    // find center of the n * n grid 
     let centerI;
     let centerJ;
     // center is (1, 1)
     if(a === 0 && b === 0) {
-        console.log('a, b', a, b)
         centerI = i + 1;
         centerJ = j + 1;
     }
     else if(a === 0 && b === 1) {
-        console.log('a, b', a, b)
         centerI = i + 1;
         centerJ = j;
     }
     else if(a === 0 && b === 2) {
-        console.log('a, b', a, b)
         centerI = i + 1;
         centerJ = j - 1;
     }
     else if(a === 1 && b === 0) {
-        console.log('a, b', a, b)
         centerI = i;
         centerJ = j + 1;
     }
     else if(a === 1 && b === 1) {
-        console.log('a, b', a, b)
         centerI = i;
         centerJ = j;
     }
     else if(a === 1 && b === 2) {
-        console.log('a, b', a, b)
         centerI = i;
         centerJ = j - 1;
     }
     else if(a === 2 && b === 0) {
-        console.log('a, b', a, b)
         centerI = i - 1;
         centerJ = j + 1;
     }
     else if(a === 2 && b === 1) {
-        console.log('a, b', a, b)
         centerI = i - 1;
         centerJ = j;
     }
     else if(a === 2 && b === 2) {
-        console.log('a, b', a, b)
         centerI = i - 1;
         centerJ = j - 1;
     }
-    console.log('center is ', centerI, centerJ);
+    // console.log('center is ', centerI, centerJ);
     
     // 1
     if(cells[centerI][centerJ].value === value) {
-        return {i, j};
+        // console.log('1, in square, the same element is ', centerI, centerJ);
+        let ci = centerI;
+        let cj = centerJ;
+        return {ci, cj};
     }
     // 2
-    else if(cells[centerI-1][centerJ-1].value === value) {
-        return {i, j};
+    else if(cells[centerI - 1][centerJ - 1].value === value) {
+        let ci = centerI - 1;
+        let cj = centerJ - 1;
+        // console.log('2, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
     // 3
-    else if(cells[centerI-1][centerJ].value === value) {
-        return {i, j};
-    }
+    else if(cells[centerI - 1][centerJ].value === value) {
+        let ci = centerI - 1;
+        let cj = centerJ
+        // console.log('3, in square, the sanme element is ',ci,cj);;
+        return {ci, cj};
+    } 
     // 4
-    else if(cells[centerI-1][centerJ+1].value === value) {
-        return {i, j};
+    else if(cells[centerI - 1][centerJ + 1].value === value) {
+        let ci = centerI - 1;
+        let cj = centerJ + 1;
+        // console.log('4, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
     // 5
-    else if(cells[centerI][centerJ+1].value === value) {
-        return {i, j};
+    else if(cells[centerI][centerJ + 1].value === value) {
+        let ci = centerI;
+        let cj = centerJ + 1;
+        // console.log('5, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
     // 6
-    else if(cells[centerI][centerJ-1].value === value) {
-        return {i, j};
+    else if(cells[centerI][centerJ - 1].value === value) {
+        let ci = centerI;
+        let cj = centerJ - 1;
+        
+        // console.log('6, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
     // 7
-    else if(cells[centerI+1][centerJ-1].value === value) {
-        return {i, j};
+    else if(cells[centerI + 1][centerJ - 1].value === value) {
+        let ci = centerI + 1;
+        let cj = centerJ - 1;
+        // console.log('7, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
     // 8
-    else if(cells[centerI+1][centerJ+1].value === value) {
-        return {i, j};
+    else if(cells[centerI + 1][centerJ + 1].value === value) {
+        let ci = centerI + 1;
+        let cj = centerJ + 1;
+        // console.log('8, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
     // 9
-    else if(cells[centerI+1][centerJ].value === value) {
-        return {i, j};
+    else if(cells[centerI + 1][centerJ].value === value) {
+        let ci = centerI + 1;
+        let cj = centerJ;
+        // console.log('9, in square, the sanme element is ',ci,cj);
+        return {ci, cj}; 
     }
-    return; 
+    return null; 
 } 
 
 // naive way; work on this later 
 function enterValue(i ,j, value) {
     if(canEnterValue(i, j)) {
-        cells[i][j] = value;
+        cells[i][j].value = value;
+        // console.log('value entered, this value is ', cells[i][j]);
         emptyCellsCount--;
+        if(isCompelete()) {
+            console.log('game is over');
+        }
     }
 }
 
@@ -478,6 +509,7 @@ function getInputFromKeyboard(event) {
     }
 }
 function isCompelete() {
+    console.log('emptyCellsCount is', emptyCellsCount);
     return emptyCellsCount === 0;
 }
 
@@ -485,15 +517,20 @@ function indexToId(i, j) {
     return i * 9 + j;
 }
 
-function idToIndex(id) {
-    let j = (id - 1) % 9;
-    let i = (id - 1 - j) / 9;
-    return {i, j}; 
-}
-
+/***********************************************************************************/
+/***********************************************************************************/
+/***********************************************************************************/
 /***********************************************************************************/
 
 function init() {
+    // defaultIndex = {i: -1, j: -1};
+    // currIndex = defaultIndex;
+    // prevIndex = defaultIndex; 
+    // collisions = [];
+
+    // objects = [];
+    // targets = {board: [], grid:[]}; 
+    
     // data 
     n = 3;
     nSqrd = n * n;
@@ -502,14 +539,15 @@ function init() {
     cells = new Utils.MultiArray(nSqrd, nSqrd);
     for(let i = 0; i < nSqrd; i++) {
         for(let j = 0; j < nSqrd; j++ ) {
-            this.cells[i][j] = {
+                cells[i][j] = {
                 value: 0,
                 isStarting: false
             };
         }
     }
 
-    emptyCellsCounts = nSqrd * nSqrd;
+    emptyCellsCount = nSqrd * nSqrd;
+    console.log(emptyCellsCount);
 
     // Get a new configuration 
     var rand = Math.floor(Math.random()*startingConfigs.length);
@@ -533,7 +571,7 @@ function init() {
             
             var number = document.createElement('div');
             number.className = 'number';
-           // number.textContent = cells[i][j].value === 0 ? '' : cells[i][j].value;
+
             if(cells[i][j].value === 0) {
                 number.textContent = '';
             } else {
@@ -572,7 +610,7 @@ function init() {
 
     // controls
     controls = new THREE.TrackballControls(camera, renderer.domElement);
-    // controls.rotateSpeed = 0.5;
+    controls.rotateSpeed = 1.5;
     controls.minDistance = 500;
     controls.maxDistance = 6000;
     controls.addEventListener( 'change', render );
@@ -583,23 +621,45 @@ function init() {
     window.addEventListener('resize', onWindowResize, false);  
     
 
-    // handle keydown 
+    // handle keydown !!
     document.onkeydown = function(event) {
        if(currIndex !== defaultIndex) {
-           var currElement = document.getElementById(indexToId(currIndex.i, currIndex.j));
+           let currElement = document.getElementById(indexToId(currIndex.i, currIndex.j));
            var input = getInputFromKeyboard(event);
-           currElement.children[0].textContent =  input;
-
-           if(checkCollision(currIndex.i, currIndex.j, input)) {
-               enterValue(currIndex.i, currIndex.j, input);
+           currElement.children[0].textContent = input;
+           
+           // special case, input is ''
+           if(input === '') {
+              if(cells[currIndex.i][currIndex.j] !== 0) {
+                  // clear value 
+                  clearValue(currIndex.i, currIndex.j);   
+              }
            } else {
-               
-           }
+                // no collision, display the value, add the number to data (cells)
+                if(checkCollision(currIndex.i, currIndex.j, input)) {
+                    enterValue(currIndex.i, currIndex.j, input);
+                }
+                // collisions happen, display the collisions and remove alert two secons later  
+                else {
+                    let x = currIndex.i;
+                    let y = currIndex.j;
+                    setTimeout(removeClashAlert, 2000, x, y);
+                }
+            }
        }
     }
 
     render();
     
+}
+
+function removeClashAlert(x, y) {
+    while(collisions.length !== 0) {
+        let clashedElement = collisions.pop();
+        clashedElement.children[0].classList.remove('collision');
+    }
+    let currElement = document.getElementById(indexToId(x, y));
+    currElement.children[0].textContent = '';
 }
 
 function transform(targets, duration) {
@@ -625,27 +685,17 @@ function onWindowResize() {
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
-// function handleKeydown(ev) {
-//     console.log('keydown', this);
-// }
-
-// function handleClick(ev) {
-//     console.log('click');
-// }
-
 function addClickHandler(el, i , j) {
     el.addEventListener('click', function(e) {
         // check if is starting config cell 
         if(cells[i][j].isStarting) {
             return;
         }
-
-        // console.log('any way, ', {i,j});
         let element = el;
         // same 
         if(currIndex.i === i && currIndex.j === j) {
-            console.log('same');
-            console.log('remove same highlight');
+            // console.log('same');
+            // console.log('remove same highlight');
             element.classList.remove('highlight');
             currIndex = defaultIndex;
             prevIndex = defaultIndex;
@@ -654,7 +704,7 @@ function addClickHandler(el, i , j) {
         // not same click 
         else {
             currIndex = {i, j};
-            console.log(currIndex);
+            console.log('currIndex is', currIndex);
             element.className += ' highlight';
             if(prevIndex !== defaultIndex) {
                 var prevId = indexToId(prevIndex.i, prevIndex.j);
@@ -676,19 +726,13 @@ function addKeydownHandler(el, i, j) {
     }, false);
 }
 
-function updateNumber() {
-}
-
 function animate() {
     requestAnimationFrame(animate);
     TWEEN.update();
     controls.update();
+    
 }
 
 function render() {
     renderer.render(scene, camera); 
 }
-
-// function handle(currentElement) {
-    
-// }
