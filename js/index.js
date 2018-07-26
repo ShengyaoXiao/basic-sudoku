@@ -253,7 +253,8 @@ var camera, scene, renderer;
 var controls;
 
 var objects = [];
-var targets = {board: [], grid:[]}; 
+
+var targets = {board: [], boardUp:[]}; 
 
 var startNewBtn = document.getElementById('start');
 // startNewBtn.addEventListener('click', init);
@@ -443,7 +444,6 @@ function checkSquare(i, j, value) {
     else if(cells[centerI][centerJ - 1].value === value) {
         let ci = centerI;
         let cj = centerJ - 1;
-        
         // console.log('6, in square, the sanme element is ',ci,cj);
         return {ci, cj}; 
     }
@@ -471,7 +471,6 @@ function checkSquare(i, j, value) {
     return null; 
 } 
 
-// naive way; work on this later 
 function enterValue(i ,j, value) {
     if(canEnterValue(i, j)) {
         cells[i][j].value = value;
@@ -483,7 +482,6 @@ function enterValue(i ,j, value) {
     }
 }
 
-// naive way; work on this later 
 function clearValue(i, j) {
     if(canClearValue(i, j)) {
         cells[i][j] = 0;
@@ -491,7 +489,6 @@ function clearValue(i, j) {
     }
 }
 
-// naive way; work on this later 
 function canEnterValue(i, j) {
     if(cells[i][j].value === 0) {
         return true;
@@ -499,7 +496,7 @@ function canEnterValue(i, j) {
     return false;
 }
 
-// naive way; work on this later 
+
 function canClearValue(i, j) {
     if(cells[i][j].value !== 0 && !cells[i][j].isStarting) {
         return true;
@@ -545,44 +542,14 @@ function indexToId(i, j) {
 /***********************************************************************************/
 
 function initView() {
-    // defaultIndex = {i: -1, j: -1};
-    // currIndex = defaultIndex;
-    // prevIndex = defaultIndex; 
-    // collisions = [];
-
-    // objects = [];
-    // targets = {board: [], grid:[]}; 
-    
-    // data 
-    // n = 3;
-    // nSqrd = n * n;
-
-    // // Initialize all the cells, all 0s 
-    // cells = new Utils.MultiArray(nSqrd, nSqrd);
-    // for(let i = 0; i < nSqrd; i++) {
-    //     for(let j = 0; j < nSqrd; j++ ) {
-    //             cells[i][j] = {
-    //             value: 0,
-    //             isStarting: false
-    //         };
-    //     }
-    // }
-
-    // emptyCellsCount = nSqrd * nSqrd;
-    // console.log(emptyCellsCount);
-
-    // // Get a new configuration 
-    // var rand = Math.floor(Math.random()*startingConfigs.length);
-    // startConfig = startingConfigs[rand];
-    // // Load the configuration and set the value to cells
-    // loadingStartingConfiguration(startConfig);
-    
     // 3D view 
     camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 1, 1000);
     camera.position.z = 3000;
     
     scene = new THREE.Scene();
     
+    let startingPosition = {x: -520, y: -610};
+    let prevPosition = {x: -520, y: -610};
     // Initialize the each cell of the board 
     let id = 0;
     for(let i = 0; i < nSqrd; i++) {
@@ -615,14 +582,43 @@ function initView() {
             objects.push(object); 
 
             object = new THREE.Object3D();
-            let offset = 135;
-            object.position.x = i * offset - 528;
-            object.position.y = j * offset - 500;
+            // object.position.x = i * offset - 528;
+            // object.position.y = j * offset - 500;
+            if(i === 0 && j === 0) {
+                object.position.x = startingPosition.x;
+                object.position.y = startingPosition.y;
+            }
+            if(j % n === 0) {
+                object.position.y = prevPosition.y + 155;
+            }
+            else {
+                object.position.y = prevPosition.y + 135;
+            }
+            object.position.x = prevPosition.x;
+            prevPosition.y = object.position.y;
+                
             targets.board.push(object);
+         //   objects1.push(object); 
+
+            let objectUp = new THREE.Object3D();
+            objectUp.position.x = object.position.x + 100;
+            objectUp.position.y = object.position.y - 100;
+            objectUp.position.z = object.position.z + 100;
+            
+            targets.boardUp.push(objectUp);
+           // objects2.push(objectUp); 
+
         }
-        
+        if((i + 1) % n === 0) {
+            prevPosition.x += 155;
+        } else {
+            prevPosition.x += 135;
+        }
+        prevPosition.y = startingPosition.y;
     }
 
+    console.log('board is ', targets.board);
+    console.log('boardUp is', targets.boardUp);
     // renderer 
     renderer = new THREE.CSS3DRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -660,6 +656,7 @@ function initView() {
                 // no collision, display the value, add the number to data (cells)
                 if(checkCollision(currIndex.i, currIndex.j, input)) {
                     enterValue(currIndex.i, currIndex.j, input);
+                //    transform(targets.boardUp, 2000);
                 }
                 // collisions happen, display the collisions and remove alert two secons later  
                 else {
@@ -671,7 +668,7 @@ function initView() {
        }
     }
 
-    render();
+    // render();
     
 }
 
@@ -685,8 +682,12 @@ function removeClashAlert(x, y) {
 }
 
 function transform(targets, duration) {
+    console.log('transform');
     TWEEN.removeAll();
     
+    // console.log('targets ',targets);
+    // console.log('current ', current);
+
     for(let i = 0; i < objects.length; i++) {
         let object = objects[i];
         let target = targets[i];
@@ -696,7 +697,7 @@ function transform(targets, duration) {
             .easing(TWEEN.Easing.Exponential.InOut)
             .start();
         
-        new TWEEN.Tween(this).to({}, duration*2).onUpdate(render).start(); 
+        new TWEEN.Tween().to({}, duration*2).onUpdate(render).start(); 
     }
 }
 
@@ -716,8 +717,6 @@ function addClickHandler(el, i , j) {
         let element = el;
         // same 
         if(currIndex.i === i && currIndex.j === j) {
-            // console.log('same');
-            // console.log('remove same highlight');
             element.classList.remove('highlight');
             currIndex = defaultIndex;
             prevIndex = defaultIndex;
@@ -730,15 +729,10 @@ function addClickHandler(el, i , j) {
             element.className += ' highlight';
             if(prevIndex !== defaultIndex) {
                 var prevId = indexToId(prevIndex.i, prevIndex.j);
-                // console.log('prev id is ', prevId);
-                // console.log('remove different highlight');
                 var prevElement = document.getElementById(prevId);
-                // console.log(prevElement);
                 prevElement.classList.remove('highlight');
             }
             prevIndex = currIndex;
-            // console.log('prev index is, ', prevIndex);
-            // console.log('not same');
         }
     }, false);
 }
@@ -752,7 +746,6 @@ function animate() {
     requestAnimationFrame(animate);
     TWEEN.update();
     controls.update();
-    
 }
 
 function render() {
