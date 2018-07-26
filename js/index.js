@@ -245,6 +245,8 @@ var defaultIndex = {i: -1, j: -1};
 var currIndex = defaultIndex;
 var prevIndex = defaultIndex; 
 var collisions = [];
+var startConfig;
+var newData = false; 
 
 var cells, startingConfig, n, nSqrd, emptyCellsCount; 
 
@@ -254,12 +256,12 @@ var controls;
 
 var objects = [];
 
-var targets = {board: [], boardUp:[]}; 
+var targets = {board: [], boardUp:[], boardDown:[]}; 
 
 var startNewBtn = document.getElementById('start');
 startNewBtn.addEventListener('click', startNewBoard);
 var resetBtn = document.getElementById('reset');
-// resetBtn.addEventListener('click', reset);
+resetBtn.addEventListener('click', resetStartConfig);
 
 initModel(); 
 initView();
@@ -609,6 +611,13 @@ function initView() {
             
             targets.boardUp.push(objectUp);
 
+            let objectDown = new THREE.Object3D();
+            objectDown.position.x = object.position.x;
+            objectDown.position.y = object.position.y;
+            objectDown.position.z = object.position.z - 150;
+
+            targets.boardDown.push(objectDown);
+
         }
         if((i + 1) % n === 0) {
             prevPosition.x += 155;
@@ -656,7 +665,7 @@ function initView() {
                 if(checkCollision(currIndex.i, currIndex.j, input)) {
                     enterValue(currIndex.i, currIndex.j, input);
                 //    transform(targets.boardUp, 2000);
-                    transformUpDown(currIndex.i, currIndex.j);
+                    transformUpBack(currIndex.i, currIndex.j);
                 }
                 // collisions happen, display the collisions and remove alert two secons later  
                 else {
@@ -696,7 +705,7 @@ function transform(targets, duration) {
     }
 }
 
-function transformUpDown(i, j) {
+function transformUpBack(i, j) {
     TWEEN.removeAll();
     let id = indexToId(i, j);
     let object = objects[id];
@@ -706,34 +715,15 @@ function transformUpDown(i, j) {
                 .to({z: targetUp.position.z }, 500)
                 .easing(TWEEN.Easing.Exponential.InOut)
 
-    let targetDown = targets.board[id]
-    let down = new TWEEN.Tween(object.position)
-                .to({z: targetDown.position.z}, 500)
+    let targetBack = targets.board[id]
+    let back = new TWEEN.Tween(object.position)
+                .to({z: targetBack.position.z}, 500)
                 .easing(TWEEN.Easing.Exponential.InOut)
 
-    up.chain(down).start();
+    up.chain(back).start();
     new TWEEN.Tween().to({}, 2000).onUpdate(render).start(); 
 }
 
-function startNewBoard() {
-    TWEEN.removeAll();
-    for(let i = 0; i < objects.length; i++) {
-        let object = objects[i];
-        let target = targets.board[i];
-
-    let center = new TWEEN.Tween(object.position)
-            .to({x: 0, y: 0, z: 0}, Math.random() * 1000 + 1000)
-            .easing(TWEEN.Easing.Exponential.InOut)
-            .onComplete(loadNewData);
-    
-    let back = new TWEEN.Tween(object.position)
-            .to({x: target.position.x, y: target.position.y, z: target.position.z}, Math.random() * 1000 + 1000)
-            .easing(TWEEN.Easing.Exponential.InOut)
-    
-    center.chain(back).start();
-    new TWEEN.Tween().to({}, 2000*2).onUpdate(render).start(); 
-    }
-}
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -786,13 +776,37 @@ function render() {
     renderer.render(scene, camera); 
 }
 
+function startNewBoard() {
+    newData = true;
+    TWEEN.removeAll();
+    for(let i = 0; i < objects.length; i++) {
+        let object = objects[i];
+        let target = targets.board[i];
+
+        let center = new TWEEN.Tween(object.position)
+                .to({x: 0, y: 0, z: 0}, Math.random() * 1000 + 1000)
+                .easing(TWEEN.Easing.Exponential.InOut)
+                .onComplete(loadNewData);
+        
+        let back = new TWEEN.Tween(object.position)
+                .to({x: target.position.x, y: target.position.y, z: target.position.z}, Math.random() * 1000 + 1000)
+                .easing(TWEEN.Easing.Exponential.InOut)
+                .onComplete(function(){newData = false;})
+        
+        center.chain(back).start();
+        new TWEEN.Tween().to({}, 2000*2).onUpdate(render).start(); 
+    }
+}
 
 function loadNewData() {
     // load new data 
-    collisions = [];
     emptyCellsCount = nSqrd * nSqrd;
-    var rand = Math.floor(Math.random()*startingConfigs.length);
-    startConfig = startingConfigs[rand];
+    if(newData) {
+        collisions = [];
+        //emptyCellsCount = nSqrd * nSqrd;
+        var rand = Math.floor(Math.random()*startingConfigs.length);
+        startConfig = startingConfigs[rand];
+    }
     loadingStartingConfiguration(startConfig);
     
     // load new view 
@@ -812,4 +826,37 @@ function loadNewData() {
             }
         }
     }
+}
+
+function resetStartConfig() {
+    TWEEN.removeAll();
+
+    let animatedObjects = [];
+    
+    for(let i = 0; i < nSqrd; i++) {
+        for(let j = 0; j < nSqrd; j++) {
+            if(!cells[i][j].isStarting){
+                let object = objects[indexToId(i,j)];
+                animatedObjects.push(object);
+            }
+        }
+    }
+
+    for(let i = 0; i < animatedObjects.length; i++) {
+        let object = animatedObjects[i];
+        let targetDown = targets.boardDown[i];
+        let targetBack = targets.board[i];
+
+        let down = new TWEEN.Tween(object.position)
+                .to({z: targetDown.position.z}, 1000)
+                .easing(TWEEN.Easing.Exponential.InOut)
+                .onComplete(loadNewData)
+
+        let back = new TWEEN.Tween(object.position)
+                .to({z: targetBack.position.z}, 1000) 
+                .easing(TWEEN.Easing.Exponential.InOut)
+        
+        down.chain(back).start();
+        new TWEEN.Tween().to({}, 2000).onUpdate(render).start(); 
+    } 
 }
