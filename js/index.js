@@ -601,9 +601,9 @@ function initView() {
          //   objects1.push(object); 
 
             let objectUp = new THREE.Object3D();
-            objectUp.position.x = object.position.x + 100;
-            objectUp.position.y = object.position.y - 100;
-            objectUp.position.z = object.position.z + 100;
+            objectUp.position.x = object.position.x;
+            objectUp.position.y = object.position.y;
+            objectUp.position.z = object.position.z + 300;
             
             targets.boardUp.push(objectUp);
            // objects2.push(objectUp); 
@@ -656,7 +656,8 @@ function initView() {
                 // no collision, display the value, add the number to data (cells)
                 if(checkCollision(currIndex.i, currIndex.j, input)) {
                     enterValue(currIndex.i, currIndex.j, input);
-                //    transform(targets.boardUp, 2000);
+                    transform(targets.boardUp, 2000);
+                //    transform(targets.board, 2000);
                 }
                 // collisions happen, display the collisions and remove alert two secons later  
                 else {
