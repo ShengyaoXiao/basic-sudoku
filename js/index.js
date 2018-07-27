@@ -263,6 +263,10 @@ startNewBtn.addEventListener('click', startNewBoard);
 var resetBtn = document.getElementById('reset');
 resetBtn.addEventListener('click', resetStartConfig);
 
+// control temporay hack...
+var canEnter = true;
+var canClick = true;
+
 initModel(); 
 initView();
 animate();
@@ -504,28 +508,13 @@ function clearValue(i, j) {
     emptyCellsCount++;
 }
 
-// function canEnterValue(i, j) {
-//     if(cells[i][j].value === 0) {
-//         return true;
-//     }
-//     return false;
-// }
-
-
-// function canClearValue(i, j) {
-//     if(cells[i][j].value !== 0 && !cells[i][j].isStarting) {
-//         return true;
-//     }
-//     return false; 
-// }
-
 function getInputFromKeyboard(event) {
     // var e = event || window.event || arguments.callee.caller.arguments[0];
     let kc = event.keyCode;
     // console.log(kc);
     if (kc === 8 || kc === 46 || kc === 96 || kc === 48) {
         /*delete or backspace or 0 on numberpad or number row*/
-        return '';
+        return 0;
         /*Empty*/
     } else if (kc >= 49 && kc <= 57) {
         return kc - 48;
@@ -534,10 +523,10 @@ function getInputFromKeyboard(event) {
         return kc - 96;
         /*1-9 numberpad*/
     } else if (kc >= 65 && kc <= 90) {
-        return '';
+        return kc - 55;
         /*A-Z*/
     } else if (kc === 222) {
-        return '';
+        return 36;
         /*#*/
     }
 }
@@ -551,11 +540,7 @@ function indexToId(i, j) {
     return i * 9 + j;
 }
 
-
-/***********************************************************************************/
-/***********************************************************************************/
-/***********************************************************************************/
-/***********************************************************************************/
+/****************************/
 
 function initView() {
     // 3D view 
@@ -564,8 +549,8 @@ function initView() {
     
     scene = new THREE.Scene();
     
-    let startingPosition = {x: -520, y: -610};
-    let prevPosition = {x: -520, y: -610};
+    let startingPosition = {x: -565, y: -610};
+    let prevPosition = {x: -565, y: -610};
     // Initialize the each cell of the board 
     let id = 0;
     for(let i = 0; i < nSqrd; i++) {
@@ -660,18 +645,29 @@ function initView() {
 
     // handle keydown !!
     document.onkeydown = function(event) {
-       if(currIndex !== defaultIndex) {
-           let currElement = document.getElementById(indexToId(currIndex.i, currIndex.j));
-           var input = getInputFromKeyboard(event);
-           currElement.children[0].textContent = input;
-           
-           // special case, input is ''
-           if(input === '') {
-              if(cells[currIndex.i][currIndex.j] !== 0) {
-                  // clear value 
-                  clearValue(currIndex.i, currIndex.j);   
-              }
-           } else {
+        if(!canEnter) {
+            return; 
+        }
+        if(currIndex !== defaultIndex) {
+            let currElement = document.getElementById(indexToId(currIndex.i, currIndex.j));
+            var input = getInputFromKeyboard(event);
+            
+            // special case, invalid input 
+            if(input > nSqrd || input % 1 !== 0) {
+                return;
+            }
+            // special case, input is ''
+            if(input === 0) {
+                if(cells[currIndex.i][currIndex.j] !== 0) {
+                    // display 
+                    currElement.children[0].textContent = '';
+                    // clear value 
+                    clearValue(currIndex.i, currIndex.j);   
+                }
+            } 
+            else {
+                // display 
+                currElement.children[0].textContent = input;
                 // no collision, display the value, add the number to data (cells)
                 if(checkCollision(currIndex.i, currIndex.j, input)) {
                     enterValue(currIndex.i, currIndex.j, input);
@@ -679,23 +675,29 @@ function initView() {
                 }
                 // collisions happen, display the collisions and remove alert two secons later  
                 else {
+                    canEnter = false;
                     let x = currIndex.i;
                     let y = currIndex.j;
-                    setTimeout(removeClashAlert, 2000, x, y);
+                    let remove = [];
+                    collisions.map(el=>remove.push(el));
+                    collisions = []; 
+                    setTimeout(removeClashAlert, 1000, remove, x, y);
                 }
             }
-       }
+        }
     }
-    
+
 }
 
-function removeClashAlert(x, y) {
-    while(collisions.length !== 0) {
-        let clashedElement = collisions.pop();
+function removeClashAlert(remove, x, y) {
+    while(remove.length !== 0) {
+        let clashedElement = remove.pop();
         clashedElement.children[0].classList.remove('collision');
     }
     let currElement = document.getElementById(indexToId(x, y));
     currElement.children[0].textContent = '';
+    canEnter = true;
+    canClick = true; 
 }
 
 function transform(targets, duration) {
@@ -744,7 +746,6 @@ function onWindowResize() {
 
 function addClickHandler(el, i , j) {
     el.addEventListener('click', function(e) {
-        // check if is starting config cell 
         if(cells[i][j].isStarting) {
             return;
         }
@@ -787,7 +788,12 @@ function render() {
 }
 
 function startNewBoard() {
+    if(!canClick) {
+        return; 
+    }
     newData = true;
+    canClick = false;
+    canEnter = false;
     TWEEN.removeAll();
     for(let i = 0; i < objects.length; i++) {
         let object = objects[i];
@@ -801,7 +807,7 @@ function startNewBoard() {
         let back = new TWEEN.Tween(object.position)
                 .to({x: target.position.x, y: target.position.y, z: target.position.z}, Math.random() * 1000 + 1000)
                 .easing(TWEEN.Easing.Exponential.InOut)
-                .onComplete(function(){newData = false;})
+                .onComplete(function(){newData = false; canClick=true; canEnter=true})
         
         center.chain(back).start();
         new TWEEN.Tween().to({}, 2000*2).onUpdate(render).start(); 
@@ -839,6 +845,11 @@ function loadNewData() {
 }
 
 function resetStartConfig() {
+    if(!canClick) {
+        return;
+    }
+    canClick = false;
+    canEnter = false;
     TWEEN.removeAll();
 
     let animatedObjects = [];
@@ -865,6 +876,7 @@ function resetStartConfig() {
         let back = new TWEEN.Tween(object.position)
                 .to({z: targetBack.position.z}, 1000) 
                 .easing(TWEEN.Easing.Exponential.InOut)
+                .onComplete(function(){canEnter=true; canClick=true;})
         
         down.chain(back).start();
         new TWEEN.Tween().to({}, 2000).onUpdate(render).start(); 
